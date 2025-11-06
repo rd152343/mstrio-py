@@ -112,12 +112,19 @@ def list_all_objects(conn, project_id):
         # Define object types to search for
         object_types_to_search = [
             ('Attributes', ObjectTypes.ATTRIBUTE),            
-            ('Metrics', ObjectTypes.METRIC),            
-            ('Filters', ObjectTypes.FILTER),
-            ('Folders', ObjectTypes.FOLDER),
-            ('Facts', ObjectTypes.FACT),            
-            ('Tables', ObjectTypes.TABLE),                                    
-            ('Prompts', ObjectTypes.PROMPT)
+            ('Metrics', ObjectTypes.METRIC)
+            # ,            
+            # ('Filters', ObjectTypes.FILTER),
+            # ('Folders', ObjectTypes.FOLDER),
+            # ('Facts', ObjectTypes.FACT),            
+            # ('Tables', ObjectTypes.TABLE),                                    
+            # ('Prompts', ObjectTypes.PROMPT),
+            # ('Security Filters', ObjectTypes.SECURITY_FILTER),
+            # ('Reports', ObjectTypes.REPORT_DEFINITION),
+            # ('Documents/Dashboards', ObjectTypes.DOCUMENT_DEFINITION), 
+            # ('Dashboard Views', ObjectTypes.DASHBOARD_PERSONAL_VIEW),
+            # ('Templates', ObjectTypes.TEMPLATE)
+
             #('AttributeForms', ObjectTypes.ATTRIBUTE_FORM)
         ]
         
@@ -166,6 +173,18 @@ def list_all_objects(conn, project_id):
                             else:
                                 parent_folder = '/'
                             
+                            # Extract first folder name from path (after project name)
+                            first_folder = 'Root'  # Default if no folders
+                            if '/' in absolute_path:
+                                path_parts = absolute_path.strip('/').split('/')
+                                # Filter out empty parts and project name if present
+                                filtered_parts = [part for part in path_parts if part and part != project_name]
+                                if filtered_parts:
+                                    # Get the first folder after filtering
+                                    first_folder = filtered_parts[0]
+                                else:
+                                    first_folder = 'Root'
+                            
                             # Get description
                             try:
                                 obj_desc = getattr(obj, 'description', 'N/A')
@@ -179,6 +198,7 @@ def list_all_objects(conn, project_id):
                                 'name': obj_name,
                                 'absolute_path': absolute_path,
                                 'parent_folder': parent_folder,
+                                'first_folder': first_folder,
                                 'type': type_name,
                                 'subtype': getattr(obj, 'subtype', 'N/A'),
                                 'description': obj_desc,
@@ -200,6 +220,7 @@ def list_all_objects(conn, project_id):
                                         'name': orphaned_name,
                                         'absolute_path': f"/ORPHANED/{orphaned_name}",
                                         'parent_folder': '/ORPHANED',
+                                        'first_folder': 'ORPHANED',
                                         'type': type_name,
                                         'subtype': 'ORPHANED',
                                         'description': f'Metadata error: {str(e)[:50]}...',
@@ -240,6 +261,26 @@ def export_objects_to_excel(objects, project_id, project_name="Unknown"):
     try:
         # Create DataFrame
         df = pd.DataFrame(objects)
+        
+        # Reorder columns for better readability
+        desired_column_order = ['id', 'name', 'type', 'subtype', 'first_folder', 'parent_folder', 'absolute_path', 'description', 'status']
+        
+        # Ensure all desired columns exist, add any missing columns that might be in the data
+        existing_columns = df.columns.tolist()
+        reordered_columns = []
+        
+        # Add desired columns in order if they exist
+        for col in desired_column_order:
+            if col in existing_columns:
+                reordered_columns.append(col)
+        
+        # Add any remaining columns that weren't in the desired order
+        for col in existing_columns:
+            if col not in reordered_columns:
+                reordered_columns.append(col)
+        
+        # Reorder the dataframe
+        df = df[reordered_columns]
         
         # Generate filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -307,6 +348,9 @@ def export_objects_to_excel(objects, project_id, project_name="Unknown"):
                 elif column_name in ['parent_folder']:
                     adjusted_width = min(max_length + 2, 60)
                     adjusted_width = max(adjusted_width, 20)
+                elif column_name in ['first_folder']:
+                    adjusted_width = min(max_length + 2, 25)
+                    adjusted_width = max(adjusted_width, 15)
                 elif column_name in ['description']:
                     adjusted_width = min(max_length + 2, 40)
                     adjusted_width = max(adjusted_width, 15)
