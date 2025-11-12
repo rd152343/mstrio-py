@@ -15,9 +15,9 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    import ZebraCreateConnection
-    import ZebraCloseConnection
-    from config.zebra_config_manager import ZebraConfig
+    import ZwcCreateConnection
+    import ZwcCloseConnection
+    from config.zwc_config_manager import ZwcConfig
     print("✓ Successfully imported Zebra connection modules and configuration")
 except ImportError as e:
     print(f"✗ Error importing modules: {e}")
@@ -25,9 +25,9 @@ except ImportError as e:
 
 
 def get_zebra_connection():
-    """Get connection using ZebraCreateConnection (no project needed for projects API)."""
+    """Get connection using ZwcCreateConnection (no project needed for projects API)."""
     try:
-        conn = ZebraCreateConnection.create_connection(
+        conn = ZwcCreateConnection.create_connection(
             use_config=True,
             project_id=None  # No project needed for projects API
         )
@@ -43,9 +43,9 @@ def get_zebra_connection():
 
 
 def close_zebra_connection(conn):
-    """Close connection using ZebraCloseConnection."""
+    """Close connection using ZwcCloseConnection."""
     try:
-        success = ZebraCloseConnection.close_connection(conn)
+        success = ZwcCloseConnection.close_connection(conn)
         if success:
             print("✓ Connection closed")
     except Exception as e:

@@ -1,9 +1,9 @@
 """
-Zebra Configuration Package
+ZWC Configuration Package
 
-This package provides centralized configuration management for Zebra MicroStrategy scripts.
+This package provides centralized configuration management for ZWC MicroStrategy scripts.
 """
 
-from .zebra_config_manager import ZebraConfig, get_zebra_config
+from .zwc_config_manager import ZwcConfig, get_zwc_config
 
-__all__ = ['ZebraConfig', 'get_zebra_config']
+__all__ = ['ZwcConfig', 'get_zwc_config']

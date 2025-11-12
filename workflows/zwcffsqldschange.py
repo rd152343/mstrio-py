@@ -7,9 +7,9 @@ from mstrio.types import ObjectTypes
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    import ZebraCreateConnection
-    import ZebraCloseConnection
-    from config.zebra_config_manager import ZebraConfig
+    import ZwcCreateConnection
+    import ZwcCloseConnection
+    from config.zwc_config_manager import ZwcConfig
     print("✓ Successfully imported Zebra connection modules and configuration")
 except ImportError as e:
     print(f"✗ Error importing modules: {e}")
@@ -17,16 +17,16 @@ except ImportError as e:
 
 
 def get_zebra_connection(project_id=None):
-    """Get connection using ZebraCreateConnection."""
+    """Get connection using ZwcCreateConnection."""
     try:
         print("Creating MicroStrategy connection...")
         
         # Load configuration for project ID if not provided
         if project_id is None:
-            config = ZebraConfig()
+            config = ZwcConfig()
             project_id = config.get_analytics_project_id()
         
-        conn = ZebraCreateConnection.create_connection(
+        conn = ZwcCreateConnection.create_connection(
             project_id=project_id,
             use_config=True
         )
@@ -42,10 +42,10 @@ def get_zebra_connection(project_id=None):
 
 
 def close_zebra_connection(conn):
-    """Close connection using ZebraCloseConnection."""
+    """Close connection using ZwcCloseConnection."""
     try:
         print("\nClosing MicroStrategy connection...")
-        success = ZebraCloseConnection.close_connection(conn)
+        success = ZwcCloseConnection.close_connection(conn)
         if success:
             print("✓ Connection closed successfully")
         else:
@@ -160,7 +160,7 @@ def main():
     print("=== Zebra FFSQL DataSource Change Script ===")
     
     # Load configuration
-    config = ZebraConfig()
+    config = ZwcConfig()
     FOLDER_ID = config.get_freeform_sql_folder_id()
     NEW_DBI_OBJECT_ID = config.get_new_dbi_object_id()
     

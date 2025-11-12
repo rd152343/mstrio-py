@@ -1,0 +1,26 @@
+{
+  "microstrategy": {
+    "base_url": "https://zwc-dev-usc1.cloud.microstrategy.com/reporting/api",
+    "username": "YOUR_USERNAME_HERE",
+    "password": "YOUR_PASSWORD_HERE",
+    "ssl_verify": false,
+    "timeout": 300
+  },
+  "projects": {
+    "default": "3FAB3265F7483C928678B6BF0564D92A",
+    "analytics": "B284A19D974C10CBB8F1BF867B85951C"
+  },
+  "folders": {
+    "freeform_sql": "43E06E215B429E35A777F5869C0565AE"
+  },
+  "datasources": {
+    "new_dbi_object_id": "27853BB4434D461045EB1EA6CAD72BB1"
+  },
+  "export": {
+    "output_directory": "./outputs",
+    "excel_format": {
+      "index": false,
+      "engine": "openpyxl"
+    }
+  }
+}

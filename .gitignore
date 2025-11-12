@@ -122,7 +122,9 @@ venv.bak/
 
 # other
 code_snippets/*.json
-workflows/*.json
+# ZWC Configuration files with credentials (keep local only)
+/workflows/config/zwc_config_local.json
+**/zwc_config_local.json
 workflows/*.xlsx
 *.xlsx
 zebra_config*.json

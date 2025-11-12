@@ -1,7 +1,7 @@
 """
 Zebra Report Instances Fetcher
 
-This script uses ZebraCreateConnection.py and ZebraCloseConnection.py to establish
+This script uses ZwcCreateConnection.py and ZwcCloseConnection.py to establish
 a MicroStrategy connection and fetch report instances via REST API.
 
 API Endpoint: /api/model/reports/{REPORT_ID}/instances
@@ -18,30 +18,30 @@ import json
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    import ZebraCreateConnection
-    import ZebraCloseConnection
+    import ZwcCreateConnection
+    import ZwcCloseConnection
     from mstrio.types import ObjectTypes
-    from config.zebra_config_manager import ZebraConfig
-    print("✓ Successfully imported Zebra connection modules, ObjectTypes, and configuration")
+    from config.zwc_config_manager import ZwcConfig
+    print("✓ Successfully imported ZWC connection modules, ObjectTypes, and configuration")
 except ImportError as e:
     print(f"✗ Error importing modules: {e}")
-    print("Make sure ZebraCreateConnection.py, ZebraCloseConnection.py, and config/ are in the same directory")
+    print("Make sure ZwcCreateConnection.py, ZwcCloseConnection.py, and config/ are in the same directory")
     print("and mstrio library is properly installed")
     sys.exit(1)
 
 
 def get_zebra_connection(project_id=None):
-    """Get connection using ZebraCreateConnection with optional project."""
+    """Get connection using ZwcCreateConnection with optional project."""
     try:
         print("Creating MicroStrategy connection...")
         
         # Load configuration for project ID if not provided
         if project_id is None:
-            config = ZebraConfig()
+            config = ZwcConfig()
             project_id = config.get_default_project_id()
         
         # Create connection using configuration (all parameters from config)
-        conn = ZebraCreateConnection.create_connection(
+        conn = ZwcCreateConnection.create_connection(
             project_id=project_id,
             use_config=True
         )
@@ -59,10 +59,10 @@ def get_zebra_connection(project_id=None):
 
 
 def close_zebra_connection(conn):
-    """Close connection using ZebraCloseConnection."""
+    """Close connection using ZwcCloseConnection."""
     try:
         print("\nClosing MicroStrategy connection...")
-        success = ZebraCloseConnection.close_connection(conn)
+        success = ZwcCloseConnection.close_connection(conn)
         if success:
             print("✓ Connection closed successfully")
         else:

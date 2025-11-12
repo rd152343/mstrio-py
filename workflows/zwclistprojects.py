@@ -2,8 +2,8 @@
 Zebra MicroStrategy Project Lister
 
 This script demonstrates how to list and manage projects in the Zebra MicroStrategy environment.
-It uses the connection created by ZebraCreateConnection.py and properly closes it afterwards
-using ZebraCloseConnection.py.
+It uses the connection created by ZwcCreateConnection.py and properly closes it afterwards
+using ZwcCloseConnection.py.
 
 This script shows project management capabilities and settings for administrators.
 """
@@ -78,25 +78,25 @@ def flatten_json_field(json_data, field_prefix=""):
 
 def get_zebra_connection():
     """
-    Get connection from ZebraCreateConnection.py or create a new one.
+    Get connection from ZwcCreateConnection.py or create a new one.
     
     Returns:
         Connection: MicroStrategy connection object
     """
     try:
-        # Try to get existing connection from ZebraCreateConnection
-        from ZebraCreateConnection import zebra_connection
+        # Try to get existing connection from ZwcCreateConnection
+        from ZwcCreateConnection import zebra_connection
         if zebra_connection:
-            print("✓ Using existing connection from ZebraCreateConnection")
+            print("✓ Using existing connection from ZwcCreateConnection")
             return zebra_connection
     except (ImportError, AttributeError, NameError):
         print("No existing connection found, creating new connection...")
     
     # Create new connection if no existing one found
     try:
-        # Import and run ZebraCreateConnection to create connection
-        import ZebraCreateConnection
-        conn = ZebraCreateConnection.main()
+        # Import and run ZwcCreateConnection to create connection
+        import ZwcCreateConnection
+        conn = ZwcCreateConnection.main()
         if conn:
             print("✓ New connection created successfully")
             return conn
@@ -131,11 +131,11 @@ def close_zebra_connection(conn):
             print("⚠ No connection object to close")
     except Exception as e:
         print(f"✗ Error closing connection: {e}")
-        # Fallback: Try using ZebraCloseConnection script
+        # Fallback: Try using ZwcCloseConnection script
         try:
             print("Attempting fallback connection cleanup...")
-            import ZebraCloseConnection
-            ZebraCloseConnection.main()
+            import ZwcCloseConnection
+            ZwcCloseConnection.main()
         except Exception as fallback_error:
             print(f"✗ Fallback cleanup also failed: {fallback_error}")
 

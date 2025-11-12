@@ -4,7 +4,7 @@ Zebra MicroStrategy Connection Closer
 This workflow demonstrates how to properly close an active MicroStrategy connection.
 Use this script after you're done with operations that require the connection.
 
-This script can close connections created by ZebraCreateConnection.py or any other
+This script can close connections created by ZwcCreateConnection.py or any other
 MicroStrategy connection that needs proper cleanup.
 """
 
@@ -21,11 +21,11 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    from config.zebra_config_manager import ZebraConfig
+    from config.zwc_config_manager import ZwcConfig
     print("✓ Configuration manager imported successfully")
 except ImportError as e:
     print(f"✗ Error importing configuration manager: {e}")
-    print("Please ensure config/zebra_config_manager.py exists")
+    print("Please ensure config/zwc_config_manager.py exists")
 
 
 def close_connection(conn):
@@ -81,7 +81,7 @@ def close_connection_by_credentials(base_url=None, username=None, password=None,
         # Load configuration if needed
         if use_config and (base_url is None or username is None or password is None):
             try:
-                config = ZebraConfig()
+                config = ZwcConfig()
                 
                 # Use config values for missing parameters
                 if base_url is None:
@@ -136,17 +136,17 @@ def main():
         # Add the workflows directory to path
         sys.path.append(os.path.dirname(__file__))
         
-        # Try to import the connection from ZebraCreateConnection
+        # Try to import the connection from ZwcCreateConnection
         try:
-            from ZebraCreateConnection import zebra_connection
+            from ZwcCreateConnection import zebra_connection
             if zebra_connection:
-                print("Found active connection from ZebraCreateConnection...")
+                print("Found active connection from ZwcCreateConnection...")
                 success = close_connection(zebra_connection)
                 if success:
                     print("✓ Connection cleanup completed!")
                     return
         except (ImportError, AttributeError, NameError):
-            print("No active connection found from ZebraCreateConnection")
+            print("No active connection found from ZwcCreateConnection")
     except Exception as e:
         print(f"Could not access global connection: {e}")
     

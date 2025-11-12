@@ -1,5 +1,5 @@
 """
-Zebra MicroStrategy Object Analyzer
+ MicroStrategy Object Analyzer
 
 Comprehensive script to:
 1. Get all Attributes, Metrics, and Facts from a project
@@ -28,7 +28,7 @@ Special handling:
 - Each expression creates separate rows for each table it references
 - Lookup table identification based on form's lookupTable property
 
-Author: Zebra Technologies
+Author:  Technologies
 Date: November 2025
 """
 
@@ -47,7 +47,7 @@ try:
     import json
     import pandas as pd
     from datetime import datetime
-    from config.zebra_config_manager import ZebraConfig
+    from config.zwc_config_manager import ZwcConfig
     print("✓ Successfully imported mstrio modules and configuration")
 except ImportError as e:
     print(f"✗ Error importing mstrio modules: {e}")
@@ -58,7 +58,7 @@ def create_connection(project_id):
     """Create connection to MicroStrategy environment."""
     try:
         # Load configuration
-        config = ZebraConfig()
+        config = ZwcConfig()
         
         # Disable SSL warnings
         import urllib3
@@ -393,10 +393,10 @@ def export_to_excel(all_data, project_id):
 
 def main():
     """Main function."""
-    print("=== Zebra Object ID Lister ===")
+    print("===  Object ID Lister ===")
     
     # Get project ID
-    print("\n💡 Default Zebra project ID: 3FAB3265F7483C928678B6BF0564D92A")
+    print("\n💡 Default  project ID: 3FAB3265F7483C928678B6BF0564D92A")
     project_id = input("Enter Project ID (or press Enter for default): ").strip()
     
     if not project_id:

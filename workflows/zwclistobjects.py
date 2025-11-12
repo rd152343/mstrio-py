@@ -29,20 +29,20 @@ except ImportError as e:
 
 # Import connection modules
 try:
-    import ZebraCreateConnection
-    import ZebraCloseConnection
+    import ZwcCreateConnection
+    import ZwcCloseConnection
     print("✓ Successfully imported Zebra connection modules")
 except ImportError as e:
     print(f"✗ Error importing Zebra connection modules: {e}")
-    print("Make sure ZebraCreateConnection.py and ZebraCloseConnection.py are in the same directory")
+    print("Make sure ZwcCreateConnection.py and ZwcCloseConnection.py are in the same directory")
     sys.exit(1)
 
 
 def get_zebra_connection():
-    """Get connection using ZebraCreateConnection."""
+    """Get connection using ZwcCreateConnection."""
     try:
         print("Creating connection...")
-        conn = ZebraCreateConnection.main()
+        conn = ZwcCreateConnection.main()
         if conn:
             print("✓ Connection established successfully")
             return conn

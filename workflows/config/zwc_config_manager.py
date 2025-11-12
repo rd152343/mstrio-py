@@ -1,13 +1,13 @@
 """
-Zebra Configuration Manager
+ZWC Configuration Manager
 
-This module provides centralized configuration management for Zebra MicroStrategy scripts.
-It reads configuration from zebra_config.json and provides methods to access settings.
+This module provides centralized configuration management for ZWC MicroStrategy scripts.
+It reads configuration from zwc_config.json and provides methods to access settings.
 
 Usage:
-    from config.zebra_config_manager import ZebraConfig
+    from config.zwc_config_manager import ZwcConfig
     
-    config = ZebraConfig()
+    config = ZwcConfig()
     url = config.get_base_url()
     username = config.get_username()
     password = config.get_password()
@@ -18,7 +18,7 @@ import os
 from typing import Dict, Any, Optional
 
 
-class ZebraConfig:
+class ZwcConfig:
     """Configuration manager for Zebra MicroStrategy scripts."""
     
     def __init__(self, config_path: Optional[str] = None):
@@ -34,8 +34,8 @@ class ZebraConfig:
             
             # Priority order: local -> default
             config_candidates = [
-                os.path.join(script_dir, 'zebra_config_local.json'),  # Local config with actual credentials
-                os.path.join(script_dir, 'zebra_config.json')         # Default template config
+                os.path.join(script_dir, 'zwc_config_local.json'),  # Local config with actual credentials
+                os.path.join(script_dir, 'zwc_config.json')         # Default template config
             ]
             
             config_path = None
@@ -201,19 +201,19 @@ class ZebraConfig:
 
 
 # Convenience function for quick access
-def get_zebra_config() -> ZebraConfig:
-    """Get a ZebraConfig instance."""
-    return ZebraConfig()
+def get_zwc_config() -> ZwcConfig:
+    """Get a ZwcConfig instance."""
+    return ZwcConfig()
 
 
 if __name__ == "__main__":
     # Test the configuration
     try:
-        config = ZebraConfig()
+        config = ZwcConfig()
         config.print_config_summary()
         
         if not config.validate_credentials():
-            print("\n⚠ WARNING: Please update your credentials in zebra_config.json")
+            print("\n⚠ WARNING: Please update your credentials in zwc_config.json")
             print("Replace 'YOUR_USERNAME_HERE' and 'YOUR_PASSWORD_HERE' with actual values")
         else:
             print("\n✓ Configuration is valid and ready to use")

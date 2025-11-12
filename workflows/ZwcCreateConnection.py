@@ -5,7 +5,7 @@ This workflow demonstrates how to create a connection to a MicroStrategy
 environment using URL, username, and password for Zebra Technologies.
 
 This script creates a connection and keeps it active for further operations.
-Use ZebraCloseConnection.py to properly close the connection when done.
+Use ZwcCloseConnection.py to properly close the connection when done.
 """
 
 from mstrio.connection import Connection
@@ -21,11 +21,11 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    from config.zebra_config_manager import ZebraConfig
+    from config.zwc_config_manager import ZwcConfig
     print("✓ Configuration manager imported successfully")
 except ImportError as e:
     print(f"✗ Error importing configuration manager: {e}")
-    print("Please ensure config/zebra_config_manager.py exists")
+    print("Please ensure config/zwc_config_manager.py exists")
     sys.exit(1)
 
 
@@ -48,7 +48,7 @@ def create_connection(base_url=None, username=None, password=None, project_id=No
         # Load configuration if needed
         if use_config and (base_url is None or username is None or password is None or project_id is None):
             try:
-                config = ZebraConfig()
+                config = ZwcConfig()
                 
                 # Use config values for missing parameters
                 if base_url is None:
@@ -152,7 +152,7 @@ def main():
                 print(f"Could not list projects: {e}")
         
         print("\n✓ Connection is ready for use!")
-        print("💡 Use ZebraCloseConnection.py to close this connection when done.")
+        print("💡 Use ZwcCloseConnection.py to close this connection when done.")
         
         # Return connection object for potential reuse
         global zebra_connection
