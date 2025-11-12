@@ -15,6 +15,18 @@ from mstrio.helpers import IServerError
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# Import configuration manager
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
+try:
+    from config.zebra_config_manager import ZebraConfig
+    print("✓ Configuration manager imported successfully")
+except ImportError as e:
+    print(f"✗ Error importing configuration manager: {e}")
+    print("Please ensure config/zebra_config_manager.py exists")
+
 
 def close_connection(conn):
     """
@@ -49,15 +61,16 @@ def close_connection(conn):
         return False
 
 
-def close_connection_by_credentials(base_url, username, password):
+def close_connection_by_credentials(base_url=None, username=None, password=None, use_config=True):
     """
     Create a new connection and immediately close it.
     Useful for cleanup when you don't have the original connection object.
     
     Args:
-        base_url (str): URL of the MicroStrategy REST API server
-        username (str): Username for authentication
-        password (str): Password for authentication
+        base_url (str, optional): URL of the MicroStrategy REST API server. If None, uses config.
+        username (str, optional): Username for authentication. If None, uses config.
+        password (str, optional): Password for authentication. If None, uses config.
+        use_config (bool): Whether to use configuration file for missing parameters
         
     Returns:
         bool: True if connection was created and closed successfully, False otherwise
@@ -65,12 +78,33 @@ def close_connection_by_credentials(base_url, username, password):
     try:
         print("Creating temporary connection for cleanup...")
         
+        # Load configuration if needed
+        if use_config and (base_url is None or username is None or password is None):
+            try:
+                config = ZebraConfig()
+                
+                # Use config values for missing parameters
+                if base_url is None:
+                    base_url = config.get_base_url()
+                if username is None:
+                    username = config.get_username()
+                if password is None:
+                    password = config.get_password()
+                
+                ssl_verify = config.get_ssl_verify()
+                
+            except Exception as e:
+                print(f"✗ Error loading configuration: {e}")
+                return False
+        else:
+            ssl_verify = False
+        
         # Create connection object
         conn = Connection(
             base_url=base_url,
             username=username,
             password=password,
-            ssl_verify=False
+            ssl_verify=ssl_verify
         )
         
         print("✓ Temporary connection established")
@@ -116,19 +150,10 @@ def main():
     except Exception as e:
         print(f"Could not access global connection: {e}")
     
-    # Option 2: Close connection using credentials (fallback method)
-    print("\nAttempting connection cleanup using credentials...")
+    # Option 2: Close connection using credentials from config (fallback method)
+    print("\nAttempting connection cleanup using configuration...")
     
-    # Zebra MicroStrategy environment details (same as ZebraCreateConnection)
-    ZEBRA_URL = "https://zwc-dev-usc1.cloud.microstrategy.com/reporting/api"
-    ZEBRA_USERNAME = "svc_dev_usc1_admin"
-    ZEBRA_PASSWORD = "P6*KBHaT%Hn5"
-    
-    success = close_connection_by_credentials(
-        base_url=ZEBRA_URL,
-        username=ZEBRA_USERNAME,
-        password=ZEBRA_PASSWORD
-    )
+    success = close_connection_by_credentials(use_config=True)
     
     if success:
         print("✓ Connection cleanup completed using credentials!")

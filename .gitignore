@@ -123,3 +123,6 @@ venv.bak/
 # other
 code_snippets/*.json
 workflows/*.json
+workflows/*.xlsx
+*.xlsx
+zebra_config*.json

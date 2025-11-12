@@ -4,8 +4,29 @@ Zebra MicroStrategy Object Analyzer
 Comprehensive script to:
 1. Get all Attributes, Metrics, and Facts from a project
 2. Call REST API for detailed information on each object
-3. Flatten the JSON responses 
+3. Process attribute forms with proper structure for analysis
 4. Export to Excel with separate tabs for each object type
+
+Expected Excel Output Structure for Attributes:
+- OBJECT_ID: MicroStrategy object ID
+- ATTRIBUTE_NAME: Name of the attribute
+- CATEGORY: Form category (ID, DESC, etc.)
+- FORM_NAME: Name of the form
+- EXPRESSION: Expression text (column name)
+- LOGICAL_TABLE: Table name where expression is found
+- IS_LOOKUP: Y if table is the lookup table for this form, N otherwise
+- ATTRIBUTE_LOOKUP: Main lookup table for the attribute
+- Report Display: Y if form is used in report displays
+- Browse Display: Y if form is used in browse displays
+- DISPLAY_FORMAT: Display format (text, number, etc.)
+- DATA_TYPE: Data type (integer, fixed_length_string, etc.)
+- PRECISION: Data precision
+- SCALE: Data scale
+
+Special handling:
+- Form groups (child forms) are expanded to show individual child form entries
+- Each expression creates separate rows for each table it references
+- Lookup table identification based on form's lookupTable property
 
 Author: Zebra Technologies
 Date: November 2025
@@ -26,7 +47,8 @@ try:
     import json
     import pandas as pd
     from datetime import datetime
-    print("✓ Successfully imported mstrio modules")
+    from config.zebra_config_manager import ZebraConfig
+    print("✓ Successfully imported mstrio modules and configuration")
 except ImportError as e:
     print(f"✗ Error importing mstrio modules: {e}")
     sys.exit(1)
@@ -35,22 +57,20 @@ except ImportError as e:
 def create_connection(project_id):
     """Create connection to MicroStrategy environment."""
     try:
-        # Zebra MicroStrategy environment details
-        ZEBRA_URL = "https://zwc-dev-usc1.cloud.microstrategy.com/reporting/api"
-        ZEBRA_USERNAME = "svc_dev_usc1_admin"
-        ZEBRA_PASSWORD = "P6*KBHaT%Hn5"
+        # Load configuration
+        config = ZebraConfig()
         
         # Disable SSL warnings
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         
-        # Create connection
+        # Create connection using configuration
         conn = Connection(
-            base_url=ZEBRA_URL,
-            username=ZEBRA_USERNAME,
-            password=ZEBRA_PASSWORD,
+            base_url=config.get_base_url(),
+            username=config.get_username(),
+            password=config.get_password(),
             project_id=project_id,
-            ssl_verify=False
+            ssl_verify=config.get_ssl_verify()
         )
         
         print("✓ Connection established successfully")
@@ -66,25 +86,29 @@ def get_object_details(conn, object_id, object_type):
     try:
         # Determine endpoint based on object type
         if object_type == 'ATTRIBUTES':
+            # Use the project-specific attribute endpoint
             endpoint = f"/api/model/attributes/{object_id}"
+            # Add showExpressionAs parameter to get better expression details
+            params = {
+                'showExpressionAs': 'tree',
+                'showFilterTokens': 'false'
+            }
         elif object_type == 'METRICS':
             endpoint = f"/api/model/metrics/{object_id}"
+            params = {}
         elif object_type == 'FACTS':
             endpoint = f"/api/model/facts/{object_id}"
+            params = {}
         else:
             print(f"  ✗ Unknown object type: {object_type}")
             return None
-            
-        full_url = f"{conn.base_url}{endpoint}"
-        print(f"  📡 API Call: {full_url}")
         
-        response = conn.get(endpoint=endpoint)
-        print(f"  📊 Response Status: {response.status_code}")
+        response = conn.get(endpoint=endpoint, params=params)
         
         if response.status_code == 200:
             return response.json()
         else:
-            print(f"  ✗ API Error {response.status_code}: {response.text}")
+            print(f"  ✗ API Error {response.status_code}: {response.text[:200]}")
             return None
             
     except Exception as e:
@@ -120,6 +144,137 @@ def flatten_json(data, parent_key='', sep='_'):
     return dict(items)
 
 
+def extract_columns_from_expression(expression):
+    """Extract column references from expression - now handles the simple text format."""
+    column_names = []
+    
+    # The expression is simply a text field containing the column name
+    expr_text = expression.get('text', '')
+    if expr_text:
+        # The text field directly contains the column name (e.g., "PROJECT_SKEY", "DOMAIN_ID", "PROJECT_TITLE")
+        column_names.append(expr_text.strip())
+    
+    return {
+        'column_names': column_names,
+        'column_ids': []  # Column IDs would be in the tables section if needed
+    }
+
+
+def process_attribute_forms(obj_details, object_id, object_name):
+    """Process attribute forms into the expected Excel structure."""
+    forms_data = []
+    
+    # Get lookup table and display information
+    attribute_lookup_table = obj_details.get('attributeLookupTable', {}).get('name', '')
+    displays = obj_details.get('displays', {})
+    report_displays = {display.get('id'): display.get('name') for display in displays.get('reportDisplays', [])}
+    browse_displays = {display.get('id'): display.get('name') for display in displays.get('browseDisplays', [])}
+    
+    # Process attribute forms
+    forms = obj_details.get('forms', [])
+    if not forms:
+        return [{'OBJECT_ID': object_id, 'ATTRIBUTE_NAME': object_name, 'error': 'No forms found'}]
+    
+    for form in forms:
+        form_id = form.get('id')
+        form_name = form.get('name', '')
+        form_category = form.get('category', '')
+        form_type = form.get('type', '')
+        form_display_format = form.get('displayFormat', '')
+        is_form_group = form.get('isFormGroup', False)
+        
+        # Get data type information
+        data_type_info = form.get('dataType', {})
+        data_type = data_type_info.get('type', '')
+        precision = data_type_info.get('precision', '')
+        scale = data_type_info.get('scale', '')
+        
+        # Get lookup table for this form
+        form_lookup_table = form.get('lookupTable', {}).get('name', '')
+        
+        # Check if this form is in report/browse displays
+        is_report_display = 'Y' if form_id in report_displays else 'N'
+        is_browse_display = 'Y' if form_id in browse_displays else 'N'
+        
+        # Skip form groups - we only want the basic forms (ID, DESC, etc.)
+        if is_form_group:
+            continue
+        
+        # Process regular forms (non-form-groups)
+        expressions = form.get('expressions', [])
+        if expressions:
+            for expr in expressions:
+                expression_obj = expr.get('expression', {})
+                expr_text = expression_obj.get('text', '')
+                
+                # Process each table in the expression
+                tables = expr.get('tables', [])
+                if tables:
+                    for table in tables:
+                        table_name = table.get('name', '')
+                        
+                        # Determine if this table is the lookup table
+                        is_lookup = 'Y' if table_name == form_lookup_table else 'N'
+                        
+                        row = {
+                            'OBJECT_ID': object_id,
+                            'ATTRIBUTE_NAME': object_name,
+                            'CATEGORY': form_category,
+                            'FORM_NAME': form_name,
+                            'EXPRESSION': expr_text,
+                            'LOGICAL_TABLE': table_name,
+                            'IS_LOOKUP': is_lookup,
+                            'ATTRIBUTE_LOOKUP': attribute_lookup_table,
+                            'Report Display': is_report_display,
+                            'Browse Display': is_browse_display,
+                            'DISPLAY_FORMAT': form_display_format,
+                            'DATA_TYPE': data_type,
+                            'PRECISION': precision,
+                            'SCALE': scale
+                        }
+                        forms_data.append(row)
+                else:
+                    # No tables in expression
+                    row = {
+                        'OBJECT_ID': object_id,
+                        'ATTRIBUTE_NAME': object_name,
+                        'CATEGORY': form_category,
+                        'FORM_NAME': form_name,
+                        'EXPRESSION': expr_text,
+                        'LOGICAL_TABLE': '',
+                        'IS_LOOKUP': 'N',
+                        'ATTRIBUTE_LOOKUP': attribute_lookup_table,
+                        'Report Display': is_report_display,
+                        'Browse Display': is_browse_display,
+                        'DISPLAY_FORMAT': form_display_format,
+                        'DATA_TYPE': data_type,
+                        'PRECISION': precision,
+                        'SCALE': scale
+                    }
+                    forms_data.append(row)
+        else:
+            # No expressions in form
+            row = {
+                'OBJECT_ID': object_id,
+                'ATTRIBUTE_NAME': object_name,
+                'CATEGORY': form_category,
+                'FORM_NAME': form_name,
+                'EXPRESSION': '',
+                'LOGICAL_TABLE': '',
+                'IS_LOOKUP': 'N',
+                'ATTRIBUTE_LOOKUP': attribute_lookup_table,
+                'Report Display': is_report_display,
+                'Browse Display': is_browse_display,
+                'DISPLAY_FORMAT': form_display_format,
+                'DATA_TYPE': data_type,
+                'PRECISION': precision,
+                'SCALE': scale
+            }
+            forms_data.append(row)
+    
+    return forms_data
+
+
 def process_objects_and_export(conn, project_id):
     """Process all object types, get detailed info via API, and export to Excel."""
     
@@ -149,25 +304,39 @@ def process_objects_and_export(conn, project_id):
                 flattened_data = []
                 
                 for i, obj in enumerate(objects, 1):
-                    print(f"  Processing {i}/{len(objects)}: {obj.id}")
+                    # Show progress every 50 objects
+                    if i % 50 == 0:
+                        print(f"  Progress: {i}/{len(objects)} objects processed")
                     
                     # Get detailed info via REST API
                     obj_details = get_object_details(conn, obj.id, type_name)
                     
                     if obj_details:
-                        # Flatten the JSON response
-                        flattened = flatten_json(obj_details)
-                        # Add basic object info
-                        flattened['object_id'] = obj.id
-                        flattened['object_name'] = getattr(obj, 'name', 'Unknown')
-                        flattened_data.append(flattened)
+                        if type_name == 'ATTRIBUTES':
+                            # Special processing for attributes to create rows for each form
+                            forms_rows = process_attribute_forms(obj_details, obj.id, getattr(obj, 'name', 'Unknown'))
+                            flattened_data.extend(forms_rows)
+                        else:
+                            # Regular flattening for METRICS and FACTS
+                            flattened = flatten_json(obj_details)
+                            # Add basic object info
+                            flattened['OBJECT_ID'] = obj.id
+                            flattened['OBJECT_NAME'] = getattr(obj, 'name', 'Unknown')
+                            flattened_data.append(flattened)
                     else:
-                        # Add basic info even if API call failed
-                        flattened_data.append({
-                            'object_id': obj.id,
-                            'object_name': getattr(obj, 'name', 'Unknown'),
-                            'api_error': 'Failed to get details'
-                        })
+                        # Add basic info even if API call failed  
+                        if type_name == 'ATTRIBUTES':
+                            flattened_data.append({
+                                'OBJECT_ID': obj.id,
+                                'ATTRIBUTE_NAME': getattr(obj, 'name', 'Unknown'),
+                                'api_error': 'Failed to get details'
+                            })
+                        else:
+                            flattened_data.append({
+                                'OBJECT_ID': obj.id,
+                                'OBJECT_NAME': getattr(obj, 'name', 'Unknown'),
+                                'api_error': 'Failed to get details'
+                            })
                 
                 all_data[type_name] = flattened_data
                 print(f"  ✓ Processed {len(flattened_data)} {type_name.lower()}")

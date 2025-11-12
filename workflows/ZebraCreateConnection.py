@@ -15,22 +15,62 @@ from mstrio.helpers import IServerError
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# Import configuration manager
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
 
-def create_connection(base_url, username, password, project_id=None, project_name=None):
+try:
+    from config.zebra_config_manager import ZebraConfig
+    print("✓ Configuration manager imported successfully")
+except ImportError as e:
+    print(f"✗ Error importing configuration manager: {e}")
+    print("Please ensure config/zebra_config_manager.py exists")
+    sys.exit(1)
+
+
+def create_connection(base_url=None, username=None, password=None, project_id=None, project_name=None, use_config=True):
     """
     Create a connection to MicroStrategy environment.
     
     Args:
-        base_url (str): URL of the MicroStrategy REST API server
-        username (str): Username for authentication
-        password (str): Password for authentication
-        project_id (str, optional): Project ID to connect to
+        base_url (str, optional): URL of the MicroStrategy REST API server. If None, uses config.
+        username (str, optional): Username for authentication. If None, uses config.
+        password (str, optional): Password for authentication. If None, uses config.
+        project_id (str, optional): Project ID to connect to. If None, uses config default.
         project_name (str, optional): Project name to connect to
+        use_config (bool): Whether to use configuration file for missing parameters
         
     Returns:
         Connection: MicroStrategy connection object if successful, None otherwise
     """
     try:
+        # Load configuration if needed
+        if use_config and (base_url is None or username is None or password is None or project_id is None):
+            try:
+                config = ZebraConfig()
+                
+                # Use config values for missing parameters
+                if base_url is None:
+                    base_url = config.get_base_url()
+                if username is None:
+                    username = config.get_username()
+                if password is None:
+                    password = config.get_password()
+                if project_id is None and project_name is None:
+                    project_id = config.get_default_project_id()
+                
+                ssl_verify = config.get_ssl_verify()
+                
+                print("✓ Using configuration values for connection")
+                
+            except Exception as e:
+                print(f"✗ Error loading configuration: {e}")
+                print("Please check your zebra_config.json file")
+                return None
+        else:
+            ssl_verify = False  # Default for manual parameters
+        
         # Create connection object
         conn = Connection(
             base_url=base_url,
@@ -38,7 +78,7 @@ def create_connection(base_url, username, password, project_id=None, project_nam
             password=password,
             project_id=project_id,
             project_name=project_name,
-            ssl_verify=False  # Set to False for self-signed certificates or dev environments
+            ssl_verify=ssl_verify
         )
         
         print("✓ Connection established successfully!")
@@ -86,19 +126,8 @@ def main():
     """
     print("=== Zebra MicroStrategy Connection Creator ===")
     
-    # Zebra MicroStrategy environment details
-    ZEBRA_URL = "https://zwc-dev-usc1.cloud.microstrategy.com/reporting/api"
-    ZEBRA_USERNAME = "svc_dev_usc1_admin"
-    ZEBRA_PASSWORD = "P6*KBHaT%Hn5"
-    ZEBRA_PROJECT_ID = "3FAB3265F7483C928678B6BF0564D92A"
-    
-    # Create connection
-    conn = create_connection(
-        base_url=ZEBRA_URL,
-        username=ZEBRA_USERNAME,
-        password=ZEBRA_PASSWORD,
-        project_id=ZEBRA_PROJECT_ID
-    )
+    # Create connection using configuration file
+    conn = create_connection(use_config=True)
 
     if conn:
         # Test the connection
