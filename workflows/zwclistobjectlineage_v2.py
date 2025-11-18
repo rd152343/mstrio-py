@@ -94,7 +94,7 @@ def get_object_details(conn, object_id, object_type):
                 'showFilterTokens': 'false'
             }
         elif object_type == 'METRICS':
-            endpoint = f"/api/model/metrics/{object_id}"
+            endpoint = f"/api/model/metrics/{object_id}?showExpressionAs=tokens"
             params = {}
         elif object_type == 'FACTS':
             endpoint = f"/api/model/facts/{object_id}"
